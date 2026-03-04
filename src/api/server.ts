@@ -22,7 +22,7 @@ app.doc(envs.openApiUrl, {
   openapi: '3.0.0',
   info: {
     version: '1.0.0',
-    title: 'Company MS',
+    title: 'Subscription MS',
   },
   servers: [
     {
@@ -31,12 +31,12 @@ app.doc(envs.openApiUrl, {
     },
   ],
   security: [{ Bearer: [] }],
-  tags: [{ name: 'company', description: 'Companies Operations' }],
+  tags: [{ name: 'subscription', description: 'Subscriptions Operations' }],
 });
 
 app.get(
   envs.docsUrl,
-  swaggerUI({ url: envs.openApiUrl, title: 'Company MS' }),
+  swaggerUI({ url: envs.openApiUrl, title: 'Subscription MS' }),
 );
 app.get(`${envs.docsUrl}/`, (c) => c.redirect(envs.docsUrl));
 app.get('/', (c) => c.redirect(envs.docsUrl));
