@@ -5,7 +5,7 @@ export const envs = {
   baseUrl: process.env.API_BASE_URL ?? '/api',
   docsUrl: process.env.DOCS_URL ?? '/public/api-docs',
   openApiUrl: process.env.OPENAPI_URL ?? '/public/openapi.json',
-  mysql: {
+  postgres: {
     database: process.env.DB_SUBSCRIPTION_DATABASE || '',
     port: Number(process.env.DB_SUBSCRIPTION_PORT) || 5432,
     host: process.env.DB_SUBSCRIPTION_HOST || '',
