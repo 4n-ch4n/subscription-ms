@@ -1,0 +1,1 @@
+export type InvoiceStatus = 'PAID' | 'PENDING' | 'FAILED' | 'VOID' | 'REFUNDED';

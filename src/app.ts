@@ -1,5 +1,5 @@
 import { serve } from '@hono/node-server';
-import app from '@api/server';
+import app from 'presentation/server';
 import { envs } from '@config';
 
 serve(
