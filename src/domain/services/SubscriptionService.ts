@@ -166,6 +166,121 @@ export class SubscriptionService {
         return subscription;
     }
 
+    async changePlan(
+        companyId: string,
+        newPlanId: string,
+        newBillingCycle: 'MONTHLY' | 'ANNUAL',
+    ): Promise<Subscription> {
+        const currentSubscription = await this.getActiveSubscription(companyId);
+        
+        if (!currentSubscription) {
+            throw new ApiErrorResponse(
+                StatusCode.NOT_FOUND,
+                ErrorCode.NOT_FOUND,
+                'No active subscription found to change',
+            );
+        }
+
+        if (currentSubscription.planId === newPlanId && currentSubscription.billingCycle === newBillingCycle) {
+            throw new ApiErrorResponse(
+                StatusCode.BAD_REQUEST,
+                ErrorCode.FAILURE,
+                'Already subscribed to the requested plan and billing cycle',
+            );
+        }
+
+        const newPlan = await this.planRepository.getPlanById(newPlanId);
+        if (!newPlan) {
+            throw new ApiErrorResponse(
+                StatusCode.NOT_FOUND,
+                ErrorCode.NOT_FOUND,
+                'New plan not found',
+            );
+        }
+
+        return this.transactionManager.executeInTransaction(async (conn) => {
+            const currentDate = new Date();
+
+            // 1. Cancel the old subscription immediately without any prorated refunds
+            currentSubscription.status = 'CANCELLED';
+            currentSubscription.autoRenew = false;
+            currentSubscription.canceledAt = currentDate;
+            currentSubscription.updatedAt = currentDate;
+            
+            await this.subscriptionRepository.updateSubscription(currentSubscription, conn);
+
+            // 2. Provision the newly selected plan (charging full price)
+            const isAnnual = newBillingCycle === 'ANNUAL';
+            const periodStart = format(currentDate, 'yyyy-MM-dd');
+            const periodEnd = format(
+                add(
+                    currentDate,
+                    isAnnual
+                        ? { years: 1 }
+                        : newPlan.name === 'Free'
+                            ? { days: 7 }
+                            : { months: 1 },
+                ),
+                'yyyy-MM-dd',
+            );
+
+            const newSubscription = new Subscription({
+                id: crypto.randomUUID(),
+                planId: newPlan.id,
+                companyId: companyId,
+                status: 'ACTIVE', // Upgrades skip the trialing phase generally
+                startDate: periodStart,
+                nextBillingDate: periodEnd,
+                billingCycle: newBillingCycle,
+                autoRenew: true,
+                createdAt: currentDate,
+            });
+
+            newSubscription.usages = newPlan.features.map((feature) => ({
+                id: crypto.randomUUID(),
+                subscriptionId: newSubscription.id,
+                featureCode: feature.featureCode,
+                currentUsage: 0,
+                isActive: true,
+                lastResetAt: currentDate,
+                periodStart: periodStart,
+                periodEnd: periodEnd,
+            }));
+
+            // 3. Create full-price invoice for the new plan
+            const basePrice = isAnnual ? (newPlan.price ?? 0) * 12 : (newPlan.price ?? 0);
+            if (basePrice > 0) {
+                const taxAmount = basePrice * 0.1;
+                const totalPrice = basePrice + taxAmount;
+
+                const invoice = new Invoice({
+                    id: crypto.randomUUID(),
+                    subscriptionId: newSubscription.id,
+                    companyId: companyId,
+                    invoiceNumber: `INV-UPG-${Date.now()}`,
+                    amount: totalPrice,
+                    currency: 'USD',
+                    status: 'PAID',
+                    billingPeriodStart: periodStart,
+                    billingPeriodEnd: periodEnd,
+                    dueDate: periodEnd,
+                    paidAt: currentDate,
+                    createdAt: currentDate,
+                });
+
+                await this.invoiceRepository.createInvoice(invoice, conn);
+            }
+
+            await this.subscriptionRepository.createSubscription(newSubscription, conn);
+            await this.subscriptionRepository.createSubscriptionUsages(
+                newSubscription.usages,
+                conn,
+            );
+
+            return newSubscription;
+        });
+    }
+
     async hasAccessToFeature(
         companyId: string,
         featureCode: string,
@@ -228,5 +343,9 @@ export class SubscriptionService {
             count,
             featureCode,
         );
+    }
+
+    async handleCompanyDeletedEvent(companyId: string): Promise<void> {
+        await this.subscriptionRepository.cancelAllCompanySubscriptions(companyId);
     }
 }

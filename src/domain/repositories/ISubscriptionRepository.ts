@@ -23,15 +23,19 @@ export interface ISubscriptionRepository {
         connection?: PoolClient,
     ): Promise<void>;
     incrementUsage(
-        companyId: string,
+        subscriptionId: string,
         count: number,
         code: string,
         connection?: PoolClient,
     ): Promise<void>;
     decrementUsage(
-        companyId: string,
+        subscriptionId: string,
         count: number,
         code: string,
+        connection?: PoolClient,
+    ): Promise<void>;
+    cancelAllCompanySubscriptions(
+        companyId: string,
         connection?: PoolClient,
     ): Promise<void>;
 }
