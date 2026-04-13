@@ -1,7 +1,11 @@
 import { PoolClient } from 'pg';
 import { Subscription } from '@domain/entities';
 import { ISubscriptionRepository } from '@domain/repositories';
-import { ISubscriptionUsage } from '@domain/value-objects';
+import {
+  ISubscriptionUsage,
+  PaginatedResult,
+  PaginationQuery,
+} from '@domain/value-objects';
 import { IPostgres } from './config';
 import { dynamicFieldsToUpdate, QueryBuilder } from '@config/utils';
 import {
@@ -33,20 +37,37 @@ export class SubscriptionRepository implements ISubscriptionRepository {
 
   async getSubscriptionsByCompanyId(
     companyId: string,
-  ): Promise<Subscription[]> {
+    pagination: PaginationQuery,
+  ): Promise<PaginatedResult<Subscription>> {
     const query = new QueryBuilder(this.postgresEntity)
       .setColumns(`${this.postgresEntity}.*, su.id AS usage_id, su.*`)
       .addJoin(
         `LEFT JOIN subscription_usages su ON (${this.postgresEntity}.id = su.subscription_id)`,
       )
       .addCondition(`${this.postgresEntity}.company_id = $1`)
+      .setLimit(pagination.limit)
+      .setOffset(pagination.offset)
       .build();
 
     const { rows } = await this.db.postgresDb.query<
       ISubscriptionModel & ISubscriptionUsageModel
     >(query, [companyId]);
 
-    return SubscriptionMapper.mapSubscriptionModelToEntity(rows);
+    const subscriptions = SubscriptionMapper.mapSubscriptionModelToEntity(rows);
+
+    const totalRowsQuery = new QueryBuilder(this.postgresEntity)
+      .setColumns(`COUNT(DISTINCT id) AS total`)
+      .addCondition('company_id = $1')
+      .build();
+
+    const { rows: totalRows } = await this.db.postgresDb.query(totalRowsQuery, [
+      companyId,
+    ]);
+
+    return {
+      data: subscriptions,
+      total: parseInt(totalRows[0].total, 10),
+    };
   }
 
   async getActiveSubscription(companyId: string): Promise<Subscription | null> {
@@ -102,18 +123,18 @@ export class SubscriptionRepository implements ISubscriptionRepository {
   ): Promise<void> {
     const db = connection || this.db.postgresDb;
 
-    const values = usages.map(usage => [
-        usage.id,
-        usage.subscriptionId,
-        usage.featureCode,
-        usage.currentUsage,
-        usage.isActive,
-        usage.lastResetAt,
-        usage.periodStart,
-        usage.periodEnd,
+    const values = usages.map((usage) => [
+      usage.id,
+      usage.subscriptionId,
+      usage.featureCode,
+      usage.currentUsage,
+      usage.isActive,
+      usage.lastResetAt,
+      usage.periodStart,
+      usage.periodEnd,
     ]);
     await db.query(
-        `INSERT INTO subscription_usages 
+      `INSERT INTO subscription_usages 
         (id, subscription_id, feature_code, current_usage, is_active, last_reset_at, period_start, period_end) 
         VALUES ${values.map((_, i) => `($${i * 8 + 1}, $${i * 8 + 2}, $${i * 8 + 3}, $${i * 8 + 4}, $${i * 8 + 5}, $${i * 8 + 6}, $${i * 8 + 7}, $${i * 8 + 8})`).join(', ')}`,
       values.flat(),

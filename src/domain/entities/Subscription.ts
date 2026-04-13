@@ -4,8 +4,8 @@ export class Subscription {
     public usages: ISubscriptionUsage[] = [];
 
     public id: string;
-    public planId: string;
     public companyId: string;
+    public planId: string | null;
     public status: SubscriptionStatus | null;
     public startDate: Date | string | null;
     public endDate: Date | string | null
@@ -19,8 +19,8 @@ export class Subscription {
 
     constructor({
         id,
-        planId,
         companyId,
+        planId = null,
         status = null,
         startDate = null,
         endDate = null,
@@ -33,8 +33,8 @@ export class Subscription {
         updatedAt = null,
     }: {
         id: string;
-        planId: string;
         companyId: string;
+        planId?: string | null;
         status?: SubscriptionStatus | null;
         startDate?: Date | string | null;
         endDate?: Date | string | null;
@@ -47,8 +47,8 @@ export class Subscription {
         updatedAt?: Date | string | null;
     }) {
         this.id = id;
-        this.planId = planId;
         this.companyId = companyId;
+        this.planId = planId;
         this.status = status;
         this.startDate = startDate;
         this.endDate = endDate;

@@ -5,7 +5,7 @@ import {
     IPlanRepository,
     ISubscriptionRepository,
 } from '@domain/repositories';
-import { ISubscriptionUsage } from '@domain/value-objects';
+import { ISubscriptionUsage, PaginatedResult, PaginationQuery } from '@domain/value-objects';
 import {
     ApiErrorResponse,
     ErrorCode,
@@ -29,9 +29,10 @@ export class SubscriptionService {
 
     async getSubscriptionsByCompanyId(
         companyId: string,
-    ): Promise<Subscription[]> {
+        pagination: PaginationQuery,
+    ): Promise<PaginatedResult<Subscription>> {
         const subscriptions =
-            await this.subscriptionRepository.getSubscriptionsByCompanyId(companyId);
+            await this.subscriptionRepository.getSubscriptionsByCompanyId(companyId, pagination);
         return subscriptions;
     }
 
@@ -201,7 +202,6 @@ export class SubscriptionService {
         return this.transactionManager.executeInTransaction(async (conn) => {
             const currentDate = new Date();
 
-            // 1. Cancel the old subscription immediately without any prorated refunds
             currentSubscription.status = 'CANCELLED';
             currentSubscription.autoRenew = false;
             currentSubscription.canceledAt = currentDate;
@@ -209,7 +209,6 @@ export class SubscriptionService {
             
             await this.subscriptionRepository.updateSubscription(currentSubscription, conn);
 
-            // 2. Provision the newly selected plan (charging full price)
             const isAnnual = newBillingCycle === 'ANNUAL';
             const periodStart = format(currentDate, 'yyyy-MM-dd');
             const periodEnd = format(
@@ -228,7 +227,7 @@ export class SubscriptionService {
                 id: crypto.randomUUID(),
                 planId: newPlan.id,
                 companyId: companyId,
-                status: 'ACTIVE', // Upgrades skip the trialing phase generally
+                status: 'ACTIVE',
                 startDate: periodStart,
                 nextBillingDate: periodEnd,
                 billingCycle: newBillingCycle,
@@ -247,7 +246,6 @@ export class SubscriptionService {
                 periodEnd: periodEnd,
             }));
 
-            // 3. Create full-price invoice for the new plan
             const basePrice = isAnnual ? (newPlan.price ?? 0) * 12 : (newPlan.price ?? 0);
             if (basePrice > 0) {
                 const taxAmount = basePrice * 0.1;
@@ -298,14 +296,16 @@ export class SubscriptionService {
 
         if (!usage || !usage.isActive) return false;
 
-        const plan = await this.planRepository.getPlanById(subscription.planId);
+        const plan = await this.planRepository.getPlanById(subscription.planId!);
         const feature = plan?.features.find((f) => f.featureCode === featureCode);
 
         if (!feature) return false;
 
         if (feature.limitValue === null) return true;
 
-        return usage.currentUsage < feature.limitValue;
+        if (!usage) return false;
+
+        return usage.currentUsage! < feature.limitValue;
     }
 
     async updateSubscription(subscription: Subscription): Promise<Subscription> {

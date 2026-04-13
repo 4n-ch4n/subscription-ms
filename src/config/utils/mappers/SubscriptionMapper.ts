@@ -4,8 +4,24 @@ import {
   ISubscriptionModel,
   ISubscriptionUsageModel,
 } from '@infrastructure/models';
+import { ISubscriptionDTO } from '@application/DTOs';
 
 export class SubscriptionMapper {
+  public static mapSubscriptionDTOToEntity = (
+    subscriptionDTO: ISubscriptionDTO,
+  ): Subscription => {
+    const id = subscriptionDTO.id || crypto.randomUUID();
+
+    const subscription = new Subscription({
+      id: id,
+      companyId: subscriptionDTO.companyId,
+      planId: subscriptionDTO.planId || null,
+      billingCycle: subscriptionDTO.billingCycle || null,
+    });
+
+    return subscription;
+  };
+
   public static mapSubscriptionModelToEntity = (
     rows: (ISubscriptionModel & ISubscriptionUsageModel)[],
   ): Subscription[] => {

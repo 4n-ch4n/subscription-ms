@@ -2,8 +2,8 @@ import { SubscriptionStatus } from '@domain/value-objects';
 
 export interface ISubscriptionModel {
   id: string;
-  plan_id: string;
   company_id: string;
+  plan_id: string | null;
   status: SubscriptionStatus | null;
   start_date: Date | string | null;
   end_date: Date | string | null;

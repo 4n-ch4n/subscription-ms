@@ -5,6 +5,9 @@ import { cors } from 'hono/cors';
 import { jwt } from 'hono/jwt';
 import { envs } from '@config';
 import rootRoutes from './_root/index';
+import plansRoutes from './plans/index';
+import invoicesRoutes from './invoices/index';
+import subscriptionsRoutes from './subscriptions/index';
 
 const app = new OpenAPIHono();
 
@@ -41,6 +44,9 @@ app.get(
 app.get(`${envs.docsUrl}/`, (c) => c.redirect(envs.docsUrl));
 app.get('/', (c) => c.redirect(envs.docsUrl));
 
+app.route(envs.baseUrl, plansRoutes);
+app.route(envs.baseUrl, invoicesRoutes);
+
 app.use(
   `${envs.baseUrl}/*`,
   jwt({
@@ -48,5 +54,7 @@ app.use(
     alg: 'HS256',
   }),
 );
+
+app.route(envs.baseUrl, subscriptionsRoutes);
 
 export default app;
