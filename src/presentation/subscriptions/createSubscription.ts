@@ -13,6 +13,10 @@ import { SubscriptionResponseSchema } from '@config/schemas/subscription.schema'
 import { SubscriptionAppService } from '@application/services';
 
 const RequestBodySchema = z.object({
+  companyId: z.string().openapi({
+    example: 'hex',
+    description: 'The ID of the company to create the subscription for.',
+  }),
   planId: z.uuid().openapi({
     example: '12345678-90ab-cdef-1234-567890abcdef',
     description: 'The ID of the subscription plan to subscribe to.',
@@ -88,8 +92,7 @@ const createHandler = (
 ): RouteHandler<typeof route, { Variables: JwtVariables }> => {
   return async (c) => {
     try {
-      const companyId = c.get('jwtPayload').companyId;
-      const { planId, billingCycle } = c.req.valid('json');
+      const { companyId, planId, billingCycle } = c.req.valid('json');
 
       const newSubscription = await subscriptionAppService.createSubscription(
         companyId,

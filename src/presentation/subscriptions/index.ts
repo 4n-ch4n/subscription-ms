@@ -1,4 +1,4 @@
-import { JwtVariables } from 'hono/jwt';
+import { jwt, JwtVariables } from 'hono/jwt';
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { envs, TransactionManager } from '@config';
 import {
@@ -42,16 +42,25 @@ const subscriptionService = new SubscriptionService(
 const subscriptionAppService = new SubscriptionAppService(subscriptionService);
 
 app.openapi(
+  createSubscription.route,
+  createSubscription.createHandler(subscriptionAppService),
+);
+
+app.use(
+  '*',
+  jwt({
+    secret: envs.secretJwt,
+    alg: 'HS256',
+  }),
+);
+
+app.openapi(
   cancelSubscription.route,
   cancelSubscription.createHandler(subscriptionAppService),
 );
 app.openapi(
   changeSubscriptionPlan.route,
   changeSubscriptionPlan.createHandler(subscriptionAppService),
-);
-app.openapi(
-  createSubscription.route,
-  createSubscription.createHandler(subscriptionAppService),
 );
 app.openapi(
   decrementFeatureUsed.route,

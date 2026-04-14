@@ -46,6 +46,7 @@ app.get('/', (c) => c.redirect(envs.docsUrl));
 
 app.route(envs.baseUrl, plansRoutes);
 app.route(envs.baseUrl, invoicesRoutes);
+app.route(envs.baseUrl, subscriptionsRoutes);
 
 app.use(
   `${envs.baseUrl}/*`,
@@ -54,7 +55,5 @@ app.use(
     alg: 'HS256',
   }),
 );
-
-app.route(envs.baseUrl, subscriptionsRoutes);
 
 export default app;
