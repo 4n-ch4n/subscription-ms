@@ -11,6 +11,7 @@ import {
 } from '@config/schemas/response';
 import { SubscriptionResponseSchema } from '@config/schemas/subscription.schema';
 import { SubscriptionAppService } from '@application/services';
+import { requirePermission } from '../middlewares';
 
 const RequestBodySchema = z.object({
   planId: z.uuid().openapi({
@@ -30,6 +31,7 @@ const route = createRoute({
   description:
     'Changes the subscription plan for the authenticated user based on the provided plan and billing cycle.',
   tags: ['Subscription'],
+  middleware: [requirePermission('billing:edit')],
   request: {
     body: {
       content: {

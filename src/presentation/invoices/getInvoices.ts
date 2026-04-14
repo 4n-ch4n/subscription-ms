@@ -11,6 +11,7 @@ import {
 } from '@config/schemas/response';
 import { InvoiceResponseSchema } from '@config/schemas/invoice.schema';
 import { InvoiceAppService } from '@application/services';
+import { requirePermission } from '../middlewares';
 
 const route = createRoute({
   method: 'get',
@@ -18,6 +19,7 @@ const route = createRoute({
   summary: 'Get invoices',
   description: 'Retrieves a list of invoices for the authenticated user.',
   tags: ['Invoice'],
+  middleware: [requirePermission('billing:view')],
   responses: {
     200: {
       description: 'Invoices retrieved successfully',

@@ -10,6 +10,7 @@ import {
 } from '@config/schemas/response';
 import { SubscriptionResponseSchema } from '@config/schemas/subscription.schema';
 import { SubscriptionAppService } from '@application/services';
+import { requirePermission } from '../middlewares';
 
 const route = createRoute({
   method: 'delete',
@@ -17,6 +18,7 @@ const route = createRoute({
   summary: 'Cancel a subscription',
   description: 'Cancels an active subscription for the authenticated user.',
   tags: ['Subscription'],
+  middleware: [requirePermission('billing:edit')],
   responses: {
     200: {
       description: 'Subscription cancelled successfully',

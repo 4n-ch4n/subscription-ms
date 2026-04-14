@@ -7,6 +7,7 @@ import {
   ErrorResponseSchema,
   StatusCode,
 } from '@config/schemas/response';
+import { requirePermission } from '../middlewares';
 
 const route = createRoute({
   method: 'delete',
@@ -15,6 +16,7 @@ const route = createRoute({
   description:
     'Deletes the company subscription associated with the authenticated user.',
   tags: ['Subscription'],
+  middleware: [requirePermission('company:delete')],
   responses: {
     204: {
       description: 'Company subscription deleted successfully',
