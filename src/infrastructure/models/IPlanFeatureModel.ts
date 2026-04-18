@@ -4,4 +4,5 @@ export interface IPlanFeatureModel {
   feature_code: string;
   limit_value: number | null;
   is_enabled: boolean | null;
+  is_resettable: boolean;
 }

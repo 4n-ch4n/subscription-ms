@@ -1,1 +1,1 @@
-export type SubscriptionStatus = 'ACTIVE' | 'TRIALING' | 'PENDING' | 'CANCELLED';
+export type SubscriptionStatus = 'ACTIVE' | 'TRIALING' | 'PENDING' | 'CANCELED';

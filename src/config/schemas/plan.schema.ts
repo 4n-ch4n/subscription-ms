@@ -38,6 +38,10 @@ export const PlanSchema = z.object({
             example: true,
             description: 'Indicates whether the feature is enabled for the subscription plan.',
         }),
+        isResettable: z.boolean().openapi({
+            example: true,
+            description: 'Indicates whether the feature usage limit resets every billing cycle.',
+        }),
     })).openapi({
         description: 'List of features included in the subscription plan.',
     }),

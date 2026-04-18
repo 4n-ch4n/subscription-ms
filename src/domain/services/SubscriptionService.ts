@@ -87,6 +87,7 @@ export class SubscriptionService {
                 companyId: companyId,
                 status: plan.name === 'Free' ? 'ACTIVE' : 'TRIALING',
                 startDate: periodStart,
+                endDate: periodEnd,
                 nextBillingDate: periodEnd,
                 billingCycle: billingCycle,
                 autoRenew: true,

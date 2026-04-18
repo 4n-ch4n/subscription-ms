@@ -37,6 +37,7 @@ export class PlanMapper {
             featureCode: row.feature_code,
             limitValue: row.limit_value,
             isEnabled: row.is_enabled,
+            isResettable: row.is_resettable,
           };
 
           feature.set(row.feature_id, planFeature);
